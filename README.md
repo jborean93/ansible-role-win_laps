@@ -1,7 +1,7 @@
 # Ansible Role win_laps
 
 [![Build Status](https://travis-ci.org/jborean93/ansible-role-win_laps.svg?branch=master)](https://travis-ci.org/jborean93/ansible-role-win_laps)
-[![win_openssh Ansible Galaxy Role](https://img.shields.io/ansible/role/xxxxx.svg)](https://galaxy.ansible.com/jborean93/win_laps)
+[![win_openssh Ansible Galaxy Role](https://img.shields.io/ansible/role/34482.svg)](https://galaxy.ansible.com/jborean93/win_laps)
 
 Installs and configures the [Local Administrator Password Solution](https://technet.microsoft.com/en-us/mt227395.aspx)
 application on a Windows host.
@@ -98,7 +98,7 @@ The following optional variables can be set to control the GPO config;
 None
 
 
-## Exmaple Playbooks
+## Example Playbooks
 
 ```
 - name: install the LAPS client with the UI

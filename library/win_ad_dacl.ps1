@@ -6,6 +6,8 @@
 #Requires -Module Ansible.ModuleUtils.Legacy
 #Requires -Module Ansible.ModuleUtils.SID
 
+$ErrorActionPreference = "Stop"
+
 $params = Parse-Args -arguments $args -supports_check_mode $true
 $check_mode = Get-AnsibleParam -obj $params -name "_ansible_check_mode" -type "bool" -default $false
 
@@ -34,13 +36,13 @@ if ($null -ne $domain_username) {
 
 Function ConvertTo-SchemaGuid {
     param(
-        [Parameter(Mandatory=$true)][Hashtable]$Value,
+        [Parameter(Mandatory=$true)]$Value,
         [Parameter(Mandatory=$true)][String]$Name,
         [Parameter(Mandatory=$true)][Int32]$Entry,
         [Hashtable]$CommonParameters
     )
 
-    if (-not $Value.ContainsKey($Name) -or $null -eq $Value.$Name) {
+    if ($null -eq $Value.$Name) {
         return [System.Guid]::Empty
     }
     $raw_value = $Value.$Name
@@ -98,7 +100,7 @@ foreach ($ace in $aces) {
     $inheritance_type = [System.DirectoryServices.ActiveDirectorySecurityInheritance]$ace.inheritance_type
 
     $object_type = ConvertTo-SchemaGuid -Value $ace `
-        -Name "object_type" -Entry $raw_aces.Count `
+        -Name "object_type" -Entry $raw_aces.Length `
         -CommonParameters $common_ad_parameters
 
     $inherited_object_type = ConvertTo-SchemaGuid -Value $ace `

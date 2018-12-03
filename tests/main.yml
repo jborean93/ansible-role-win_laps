@@ -27,6 +27,13 @@
   gather_facts: no
 
   tasks:
+  - name: use powershell to get password
+    win_shell: |
+      $obj = Get-ADObject -Identity "CN=CHILD01,OU=Workstations,DC=ansible,DC=laps" -Properties ms-Mcs-AdmPwd
+      Write-Output -InputObject $obj."ms-Mcs-AdmPwd"
+    register: powershell_password
+    delegate_to: dc01
+
   - name: use lookup to get password
     set_fact:
       laps_password: '{{ lookup("laps_password", "CHILD01",
@@ -34,13 +41,6 @@
                                 username=hostvars["dc01"]["ansible_user"],
                                 password=hostvars["dc01"]["ansible_password"],
                                 search_base="OU=Workstations,DC=ansible,DC=laps") }}'
-
-  - name: use powershell to get password
-    win_shell: |
-      $obj = Get-ADObject -Identity "CN=CHILD01,OU=Workstations,DC=ansible,DC=laps" -Properties ms-Mcs-AdmPwd
-      Write-Output -InputObject $obj."ms-Mcs-AdmPwd"
-    register: powershell_password
-    delegate_to: dc01
 
   - name: verify the passwords are the same
     assert:

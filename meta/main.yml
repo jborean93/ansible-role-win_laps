@@ -4,13 +4,15 @@ galaxy_info:
   author: Jordan Borean
   description: Install LAPS on a Windows host
   license: MIT
-  min_ansible_version: 2.5
+  min_ansible_version: 2.6
   platforms:
   - name: Windows
     versions:
-    - Server 2016
-    - Server 2012 R2
+    - 2016
+    - 2012R2
   galaxy_tags:
   - windows
   - authentication
+  - system
+  - security
 dependencies: []
