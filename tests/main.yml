@@ -1,0 +1,48 @@
+# Before running this make sure you have run 'Vagrant up' to setup the hosts
+---
+- name: setup LAPS on the domain controller
+  hosts: dc01
+  gather_facts: no
+
+  roles:
+  - role: ../..
+    man_laps_ou_containers:
+    - OU=Workstations,DC=ansible,DC=laps
+    opt_laps_install_server: True
+    opt_laps_configure_gpo: True
+
+- name: setup LAPS on the client
+  hosts: child
+  gather_facts: no
+  roles:
+  - role: ../..
+    opt_laps_install_client: True
+
+  post_tasks:
+  - name: refresh GPO on the client
+    win_command: gpupdate /force
+
+- name: try and retrieve the LAPS password
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+  - name: use lookup to get password
+    set_fact:
+      laps_password: '{{ lookup("laps_password", "CHILD01",
+                                domain_server=hostvars["dc01"]["ansible_host"],
+                                username=hostvars["dc01"]["ansible_user"],
+                                password=hostvars["dc01"]["ansible_password"],
+                                search_base="OU=Workstations,DC=ansible,DC=laps") }}'
+
+  - name: use powershell to get password
+    win_shell: |
+      $obj = Get-ADObject -Identity "CN=CHILD01,OU=Workstations,DC=ansible,DC=laps" -Properties ms-Mcs-AdmPwd
+      Write-Output -InputObject $obj."ms-Mcs-AdmPwd"
+    register: powershell_password
+    delegate_to: dc01
+
+  - name: verify the passwords are the same
+    assert:
+      that:
+      - laps_password == powershell_password.stdout_lines[0]

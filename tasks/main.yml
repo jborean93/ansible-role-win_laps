@@ -1,0 +1,72 @@
+---
+- name: validate input variables
+  assert:
+    that:
+    # Make sure either cient or server is being installed
+    - opt_laps_install_server or opt_laps_install_client
+
+- name: install the client components if requested
+  set_fact:
+    pri_laps_msi_components: '{{ pri_laps_msi_components + ["CSE"] }}'
+  when: opt_laps_install_client
+
+- name: install the PowerShell module if requested
+  set_fact:
+    pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.PS"] }}'
+  when: opt_laps_install_powershell
+
+- name: install the server components if requested
+  set_fact:
+    pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.ADMX"] }}'
+  when: opt_laps_install_server
+
+- name: install the client UI if requested
+  set_fact:
+    pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.UI"] }}'
+  when: opt_laps_install_ui
+
+- name: selete appropriate URL if not explicitly defined
+  block:
+  - name: get the current architecture of the host
+    win_shell: $env:processor_architecture
+    register: pri_laps_host_architecture
+    changed_when: False
+
+  - name: select the appropriate URL based on the architecture
+    set_fact:
+      opt_laps_install_source: '{{ pri_laps_install_urls[pri_laps_host_architecture.stdout_lines[0]|upper] }}'
+    when: not ansible_check_mode
+
+  - name: select the appropriate URL based on the architecture (check mode)
+    set_fact:
+      opt_laps_install_source: '{{ pri_laps_install_urls.AMD64 }}'
+    when: ansible_check_mode
+  when: opt_laps_install_source is not defined
+
+- name: calculate the creation path for idempotency
+  set_fact:
+    pri_laps_creates_path: '{{ opt_laps_install_server | ternary("%SystemRoot%\PolicyDefinitions\AdmPwd.admx", "%ProgramFiles%\LAPS")  }}'
+  when: not opt_laps_product_id is defined
+
+- name: install LAPS
+  win_package:
+    arguments: ADDLOCAL={{ pri_laps_msi_components | join(",") }}{{ " CUSTOMADMINNAME=" ~ opt_laps_admin_account if opt_laps_admin_account is defined and "CSE" in pri_laps_msi_components else "" }}
+    path: '{{ opt_laps_install_source }}'
+    state: present
+    creates_path: '{{ (opt_laps_product_id is defined) | ternary(omit, pri_laps_creates_path) }}'
+    product_id: '{{ opt_laps_product_id | default(omit) }}'
+  register: pri_laps_install
+
+- name: reboot after installing LAPS if required
+  win_reboot:
+  when:
+  - pri_laps_install.reboot_required
+  - not opt_laps_skip_reboot
+
+- name: set reboot required output variable
+  set_fact:
+    out_laps_reboot_rquired: '{{ (pri_laps_install.reboot_required and opt_laps_skip_reboot) | bool }} '
+
+- name: install server components
+  include_tasks: server.yml
+  when: opt_laps_install_server

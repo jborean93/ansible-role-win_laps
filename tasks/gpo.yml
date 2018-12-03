@@ -1,0 +1,93 @@
+---
+- name: validate input variables for GPO configuration
+  assert:
+    that:
+    - opt_laps_password_policy_complexity in pri_laps_password_policy_complexity.keys()
+
+- name: create LAPS GPO
+  win_gpo:
+    name: '{{ opt_laps_gpo_name }}'
+    description: Setup by Ansible for LAPS
+    state: present
+  register: pri_laps_gpo
+
+- name: add LAPS extension to the GPO
+  win_ad_object:
+    name: '{{ pri_laps_gpo.path }}'
+    attributes:
+      # [Registry:Admin Tool][AdmPwd:Admin Tool]
+      gPCMachineExtensionNames: '[{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{D02B1F72-3407-48AE-BA88-E8213C6761F1}][{D76B9641-3288-4F75-942D-087DE603E3EA}{D02B1F72-3407-48AE-BA88-E8213C6761F1}]'
+
+- name: configure the LAPS password policy settings
+  win_gpo_reg:
+    gpo: '{{ opt_laps_gpo_name }}'
+    name: '{{ item.name }}'
+    path: '{{ pri_laps_gpo_reg_path }}'
+    state: present
+    type: dword
+    value: '{{ item.value }}'
+  with_items:
+  - name: PasswordComplexity
+    value: '{{ pri_laps_password_policy_complexity[opt_laps_password_policy_complexity] }}'
+  - name: PasswordLength
+    value: '{{ opt_laps_password_policy_length }}'
+  - name: PasswordAgeDays
+    value: '{{ opt_laps_password_policy_age }}'
+  when: not ansible_check_mode
+
+- name: configure the LAPS expiration protection
+  win_gpo_reg:
+    gpo: '{{ opt_laps_gpo_name }}'
+    name: PwdExpirationProtectionEnabled
+    path: '{{ pri_laps_gpo_reg_path }}'
+    state: '{{ opt_laps_enforce_password_expiry | ternary("present", "disabled") }}'
+    type: dword
+    value: '{{ opt_laps_enforce_password_expiry | ternary(1, omit) }}'
+  when:
+  - not ansible_check_mode
+  - opt_laps_enforce_password_expiry is defined
+
+- name: remove configuration for LAPS expiration protection
+  win_gpo_reg:
+    gpo: '{{ opt_laps_gpo_name }}'
+    name: PwdExpirationProtectionEnabled
+    path: '{{ pri_laps_gpo_reg_path }}'
+    state: absent
+  when:
+  - not ansible_check_mode
+  - opt_laps_enforce_password_expiry is not defined
+
+- name: configure the LAPS custom admin username policy
+  win_gpo_reg:
+    gpo: '{{ opt_laps_gpo_name }}'
+    name: AdminAccountName
+    path: '{{ pri_laps_gpo_reg_path }}'
+    state: '{{ opt_laps_admin_account is defined | ternary("present", "absent") }}'
+    type: string
+    value: '{{ opt_laps_admin_account | default(omit) }}'
+  when: not ansible_check_mode
+
+- name: enable the LAPS GPO setting
+  win_gpo_reg:
+    gpo: '{{ opt_laps_gpo_name }}'
+    name: AdmPwdEnabled
+    path: '{{ pri_laps_gpo_reg_path }}'
+    state: present
+    type: dword
+    value: 1
+  when: not ansible_check_mode
+
+- name: create comment file for GPO
+  win_copy:
+    src: comment.cmtx
+    dest: C:\Windows\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx
+  when: not ansible_check_mode
+
+- name: ensure GPO is linked and enforced
+  win_gpo_link:
+    name: '{{ opt_laps_gpo_name }}'
+    target: '{{ item }}'
+    state: present
+    enforced: True
+    enabled: True
+  loop: '{{ man_laps_ou_containers }}'

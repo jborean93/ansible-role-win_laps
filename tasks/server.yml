@@ -1,0 +1,103 @@
+---
+- name: validate input variables for a server install
+  assert:
+    that:
+    - man_laps_ou_containers is defined
+
+- name: setup LAPS password attribute
+  win_ad_object:
+    name: '{{ pri_laps_password_attribute }}'
+    attributes:
+      adminDescription: LAPS Password Attribute
+      lDAPDisplayName: '{{ pri_laps_password_attribute }}'
+      adminDisplayName: '{{ pri_laps_password_attribute }}'
+      attributeId: 1.2.840.113556.1.8000.2554.50051.45980.28112.18903.35903.6685103.1224907.2.1
+      attributeSyntax: '2.5.5.5'  # String(IAS)
+      omSyntax: 19  # String(Printable)
+      isSingleValued: True
+      systemOnly: False
+      isMemberOfPartialAttributeSet: False
+      searchFlags: 904  # RO,NV,CF,PR - http://www.frickelsoft.net/blog/?p=151
+      showInAdvancedViewOnly: False
+    context: schema
+    type: attribute
+    update_schema: True
+    domain_server: '{{ opt_laps_domain_server | default(omit) }}'
+    domain_username: '{{ opt_laps_domain_username | default(omit) }}'
+    domain_password: '{{ opt_laps_domain_password | default(omit) }}'
+  # If the domain server or username is not defined, we are running on a domain
+  # controller. Use become to the SYSTEM account to ensure we have the
+  # privileges required to update the schema attributes
+  become: '{{ (opt_laps_domain_server is defined or domain_username is defined) | ternary(omit, True) }}'
+  become_method: runas
+  become_user: SYSTEM
+
+- name: setup LAPS password expiry time attribute
+  win_ad_object:
+    name: '{{ pri_laps_expiry_attribute }}'
+    attributes:
+      adminDescription: LAPS Password Expiration Time Attribute
+      lDAPDisplayName: '{{ pri_laps_expiry_attribute }}'
+      adminDisplayName: '{{ pri_laps_expiry_attribute }}'
+      attributeId: 1.2.840.113556.1.8000.2554.50051.45980.28112.18903.35903.6685103.1224907.2.2
+      attributeSyntax: '2.5.5.16'  # LargeInteger
+      omSyntax: 65  # LargeInteger
+      isSingleValued: True
+      systemOnly: False
+      isMemberOfPartialAttributeSet: False
+      searchFlags: 0
+      showInAdvancedViewOnly: False
+    context: schema
+    type: attribute
+    update_schema: True
+    domain_server: '{{ opt_laps_domain_server | default(omit) }}'
+    domain_username: '{{ opt_laps_domain_username | default(omit) }}'
+    domain_password: '{{ opt_laps_domain_password | default(omit) }}'
+  become: '{{ (opt_laps_domain_server is defined or domain_username is defined) | ternary(omit, True) }}'
+  become_method: runas
+  become_user: SYSTEM
+
+- name: add new LAPS attributes to the Computer attribute
+  win_ad_object:
+    name: Computer
+    may_contain:
+    - '{{ pri_laps_password_attribute }}'
+    - '{{ pri_laps_expiry_attribute }}'
+    context: schema
+    update_schema: True
+    domain_server: '{{ opt_laps_domain_server | default(omit) }}'
+    domain_username: '{{ opt_laps_domain_username | default(omit) }}'
+    domain_password: '{{ opt_laps_domain_password | default(omit) }}'
+  become: '{{ (opt_laps_domain_server is defined or domain_username is defined) | ternary(omit, True) }}'
+  become_method: runas
+  become_user: SYSTEM
+  when: not ansible_check_mode
+
+- name: apply DACL to allow computers to access LAPS attributes
+  win_ad_dacl:
+    path: '{{ item }}'
+    state: present
+    aces:
+    - rights:
+      - ReadProperty
+      - WriteProperty
+      inheritance_type: Descendents
+      inherited_object_type: Computer
+      object_type: '{{ pri_laps_expiry_attribute }}'
+      access: allow
+      account: S-1-5-10  # NT AUTHORITY\SELF
+    - rights: WriteProperty
+      inheritance_type: Descendents
+      inherited_object_type: Computer
+      object_type: '{{ pri_laps_password_attribute }}'
+      access: allow
+      account: S-1-5-10
+    domain_server: '{{ opt_laps_domain_server | default(omit) }}'
+    domain_username: '{{ opt_laps_domain_username | default(omit) }}'
+    domain_password: '{{ opt_laps_domain_password | default(omit) }}'
+  loop: '{{ man_laps_ou_containers }}'
+  when: not ansible_check_mode
+
+- name: configure GPO
+  include_tasks: gpo.yml
+  when: opt_laps_configure_gpo

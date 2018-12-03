@@ -1,0 +1,16 @@
+---
+pri_laps_password_attribute: ms-Mcs-AdmPwd
+pri_laps_expiry_attribute: ms-Mcs-AdmPwdExpirationTime
+pri_laps_msi_components: []
+pri_laps_gpo_reg_path: HKLM\Software\Policies\Microsoft Services\AdmPwd
+pri_laps_install_urls:
+  AMD64: https://download.microsoft.com/download/C/7/A/C7AAD914-A8A6-4904-88A1-29E657445D03/LAPS.x64.msi
+  X86: https://download.microsoft.com/download/C/7/A/C7AAD914-A8A6-4904-88A1-29E657445D03/LAPS.x86.msi
+
+# converts opt_laps_password_policy_complexity to the value expected by GPO
+pri_laps_password_policy_complexity:
+  uppercase: 1
+  uppercase,lowercase: 2
+  uppercase,lowercase,digits: 3
+  uppercase,lowercase,digits,symbols: 4
+

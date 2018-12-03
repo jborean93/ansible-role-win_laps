@@ -1,0 +1,77 @@
+---
+- name: setup the domain controller
+  hosts: dc01
+  gather_facts: no
+  tasks:
+  - name: set the DNS IP to localhost
+    win_dns_client:
+      adapter_name: Ethernet 2
+      ipv4_addresses: 127.0.0.1
+
+  - name: create domain
+    win_domain:
+      dns_domain_name: ansible.laps
+      safe_mode_password: Password01
+    register: domain_res
+
+  - name: reboot after creating the domain
+    win_reboot:
+    when: domain_res.reboot_required
+
+  - name: create domain admin user
+    win_domain_user:
+      name: vagrant-domain
+      upn: vagrant-domain@ANSIBLE.LAPS
+      password: Password01
+      password_never_expires: yes
+      groups:
+      - Domain Admins
+      state: present
+    register: domain_user
+    retries: 30
+    delay: 15
+    until: domain_user is successful
+
+- name: join child host to domain
+  hosts: child
+  gather_facts: no
+  tasks:
+  - name: point DNS to the DC
+    win_dns_client:
+      adapter_names: Ethernet 2
+      ipv4_addresses: 192.168.57.10
+
+  - name: join host to domain
+    win_domain_membership:
+      dns_domain_name: ANSIBLE.LAPS
+      domain_admin_user: vagrant-domain@ANSIBLE.LAPS
+      domain_admin_password: Password01
+      state: domain
+    register: domain_join
+
+  - name: reboot if necessary
+    win_reboot:
+    when: domain_join.reboot_required
+
+- name: setup OU and move child host to that OU
+  hosts: dc01
+  gather_facts: no
+  tasks:
+  - name: check if OU exists
+    win_shell: |
+      try {
+          Get-ADOrganizationalUnit -Identity "OU=Workstations,DC=ansible,DC=laps" > $null
+          $true
+      } catch [Microsoft.ActiveDirectory.Management.ADIdentityNotFoundException] {
+          $false
+      }
+    changed_when: False
+    register: ou_stat
+
+  - name: create OU
+    win_shell: |
+      New-ADOrganizationalUnit -Name Workstations -Path "DC=ansible,DC=laps"
+      Move-ADObject -Identity "CN=CHILD01,CN=Computers,DC=ansible,DC=laps" -TargetPath "OU=Workstations,DC=ansible,DC=laps"
+    when:
+    - not ansible_check_mode
+    - not ou_stat.stdout_lines[0]|bool

@@ -1,0 +1,16 @@
+---
+# Common variables
+opt_laps_configure_gpo: False
+opt_laps_install_client: False
+opt_laps_install_powershell: False
+opt_laps_install_server: False
+opt_laps_install_ui: False
+opt_laps_skip_reboot: False
+
+# Server variables
+
+# GPO variables
+opt_laps_gpo_name: ansible-laps
+opt_laps_password_policy_complexity: uppercase,lowercase,digits,symbols
+opt_laps_password_policy_length: 14
+opt_laps_password_policy_age: 30
