@@ -3,9 +3,14 @@
   hosts: dc01
   gather_facts: no
   tasks:
+  - name: get name of the interface alias
+    win_shell: (Get-NetIPConfiguration | Where-Object { $_.IPv4Address.IPAddress -eq '{{ ansible_host }}' }).InterfaceAlias
+    changed_when: False
+    register: adapter_name
+
   - name: set the DNS IP to localhost
     win_dns_client:
-      adapter_name: Ethernet 2
+      adapter_name: '{{ adapter_name.stdout | trim }}'
       ipv4_addresses: 127.0.0.1
 
   - name: create domain
@@ -36,10 +41,21 @@
   hosts: child
   gather_facts: no
   tasks:
+  - name: make sure Administrator is not disabled
+    win_user:
+      name: Administrator
+      account_disabled: no
+      state: present
+
+  - name: get name of the interface alias
+    win_shell: (Get-NetIPConfiguration | Where-Object { $_.IPv4Address.IPAddress -eq '{{ ansible_host }}' }).InterfaceAlias
+    changed_when: False
+    register: adapter_name
+
   - name: point DNS to the DC
     win_dns_client:
-      adapter_names: Ethernet 2
-      ipv4_addresses: 192.168.57.10
+      adapter_names: '{{ adapter_name.stdout | trim }}'
+      ipv4_addresses: '{{ hostvars["dc01"]["ansible_host"] }}'
 
   - name: join host to domain
     win_domain_membership:

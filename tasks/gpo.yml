@@ -16,7 +16,8 @@
     name: '{{ pri_laps_gpo.path }}'
     attributes:
       # [Registry:Admin Tool][AdmPwd:Admin Tool]
-      gPCMachineExtensionNames: '[{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{D02B1F72-3407-48AE-BA88-E8213C6761F1}][{D76B9641-3288-4F75-942D-087DE603E3EA}{D02B1F72-3407-48AE-BA88-E8213C6761F1}]'
+      gPCMachineExtensionNames: "[{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{D02B1F72-3407-48AE-BA88-E8213C6761F1}]\
+        [{D76B9641-3288-4F75-942D-087DE603E3EA}{D02B1F72-3407-48AE-BA88-E8213C6761F1}]"
 
 - name: configure the LAPS password policy settings
   win_gpo_reg:

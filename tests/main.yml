@@ -32,17 +32,23 @@
       $obj = Get-ADObject -Identity "CN=CHILD01,OU=Workstations,DC=ansible,DC=laps" -Properties ms-Mcs-AdmPwd
       Write-Output -InputObject $obj."ms-Mcs-AdmPwd"
     register: powershell_password
+    changed_when: False
     delegate_to: dc01
+
+  - name: use password to connect to host
+    win_ping:
+    delegate_to: child
+    vars:
+      ansible_user: Administrator
+      ansible_password: '{{ powershell_password.stdout_lines[0] }}'
 
   - name: use lookup to get password
     set_fact:
       laps_password: '{{ lookup("laps_password", "CHILD01",
-                                domain_server=hostvars["dc01"]["ansible_host"],
+                                domain=hostvars["dc01"]["ansible_host"],
                                 username=hostvars["dc01"]["ansible_user"],
                                 password=hostvars["dc01"]["ansible_password"],
-                                search_base="OU=Workstations,DC=ansible,DC=laps") }}'
-
-  - name: verify the passwords are the same
-    assert:
-      that:
-      - laps_password == powershell_password.stdout_lines[0]
+                                auth="simple",
+                                allow_plaintext=True) }}'
+    failed_when: laps_password != powershell_password.stdout_lines[0]
+    when: ansible_version.string is version_compare("2.8", ">=")  # laps_password only added in 2.8

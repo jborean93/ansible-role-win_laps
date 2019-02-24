@@ -100,4 +100,4 @@
 
 - name: configure GPO
   include_tasks: gpo.yml
-  when: opt_laps_configure_gpo
+  when: opt_laps_configure_gpo | bool

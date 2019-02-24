@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "dc" do |dc|
     dc.vm.box = "jborean93/WindowsServer2016"
     dc.vm.hostname = "DC01"
-    dc.vm.network :private_network, ip: "192.168.57.10", :name => 'vboxnet1'
+    dc.vm.network :private_network, ip: "192.168.56.40", :name => 'vboxnet0'
     dc.vm.provider :virtualbox do |v|
       v.gui = false
       v.memory = 2048
@@ -16,7 +16,7 @@ Vagrant.configure("2") do |config|
   config.vm.define "child" do |child|
     child.vm.box = "jborean93/WindowsServer2016"
     child.vm.hostname = "CHILD01"
-    child.vm.network :private_network, ip: "192.168.57.11", :name => 'vboxnet1'
+    child.vm.network :private_network, ip: "192.168.56.41", :name => 'vboxnet0'
     child.vm.provider :virtualbox do |v|
       v.gui = false
       v.memory = 2048

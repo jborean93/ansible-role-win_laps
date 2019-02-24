@@ -2,6 +2,7 @@
 galaxy_info:
   role_name: win_laps
   author: Jordan Borean
+  company: N/A
   description: Install LAPS on a Windows host
   license: MIT
   min_ansible_version: 2.6

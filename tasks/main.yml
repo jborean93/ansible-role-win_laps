@@ -8,22 +8,22 @@
 - name: install the client components if requested
   set_fact:
     pri_laps_msi_components: '{{ pri_laps_msi_components + ["CSE"] }}'
-  when: opt_laps_install_client
+  when: opt_laps_install_client | bool
 
 - name: install the PowerShell module if requested
   set_fact:
     pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.PS"] }}'
-  when: opt_laps_install_powershell
+  when: opt_laps_install_powershell | bool
 
 - name: install the server components if requested
   set_fact:
     pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.ADMX"] }}'
-  when: opt_laps_install_server
+  when: opt_laps_install_server | bool
 
 - name: install the client UI if requested
   set_fact:
     pri_laps_msi_components: '{{ pri_laps_msi_components + ["Management.UI"] }}'
-  when: opt_laps_install_ui
+  when: opt_laps_install_ui | bool
 
 - name: selete appropriate URL if not explicitly defined
   block:
@@ -48,14 +48,21 @@
     pri_laps_creates_path: '{{ opt_laps_install_server | ternary("%SystemRoot%\PolicyDefinitions\AdmPwd.admx", "%ProgramFiles%\LAPS")  }}'
   when: not opt_laps_product_id is defined
 
+- name: calculate the custom admin argument
+  set_fact:
+    pri_laps_cust_admin: '{{ " CUSTOMADMINNAME=" ~ opt_laps_admin_account if opt_laps_admin_account is defined and "CSE" in pri_laps_msi_components else "" }}'
+
 - name: install LAPS
   win_package:
-    arguments: ADDLOCAL={{ pri_laps_msi_components | join(",") }}{{ " CUSTOMADMINNAME=" ~ opt_laps_admin_account if opt_laps_admin_account is defined and "CSE" in pri_laps_msi_components else "" }}
+    arguments: ADDLOCAL={{ pri_laps_msi_components | join(",") }}{{ pri_laps_cust_admin }}
     path: '{{ opt_laps_install_source }}'
     state: present
     creates_path: '{{ (opt_laps_product_id is defined) | ternary(omit, pri_laps_creates_path) }}'
     product_id: '{{ opt_laps_product_id | default(omit) }}'
   register: pri_laps_install
+  until: pri_laps_install is success
+  retries: 3  # Try 3 times just in case it failed to download the URL
+  delay: 1
 
 - name: reboot after installing LAPS if required
   win_reboot:
@@ -69,4 +76,4 @@
 
 - name: install server components
   include_tasks: server.yml
-  when: opt_laps_install_server
+  when: opt_laps_install_server | bool
