@@ -81,7 +81,7 @@
 - name: create comment file for GPO
   win_copy:
     src: comment.cmtx
-    dest: C:\Windows\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx
+    dest: '{{ opt_laps_gpo_comment_path }}'
   when: not ansible_check_mode
 
 - name: ensure GPO is linked and enforced
