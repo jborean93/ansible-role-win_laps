@@ -87,6 +87,7 @@ The following optional variables can be set to control the GPO config;
     * `uppercase,lowercase,digits`
     * `uppercase,lowercase,digits,symbols` *default*
 * `opt_laps_password_policy_length`: The length of the password to generate (default: `14`)
+* `opt_laps_gpo_comment_path`: The path for GPO Comment (default: `opt_laps_gpo_comment_path: D:\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx`
 
 ### Output Variables
 
@@ -126,8 +127,19 @@ None
   - role: jborean93.win_laps
     man_laps_ou_containers:
     - OU=Workstations,DC=domain,DC=local
-    opt_laps_install_server; True
+    opt_laps_install_server: True
     opt_laps_configure_gpo: True
+    
+- name: install the LAPS server and create a GPO when SYSVOL is on D:\
+  hosts: windows
+  gather_facts: no
+  roles:
+  - role: jborean93.win_laps
+    man_laps_ou_containers:
+    - OU=Workstations,DC=domain,DC=local
+    opt_laps_install_server: True
+    opt_laps_configure_gpo: True
+    opt_laps_gpo_comment_path: D:\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx
 ```
 
 Once the role has been run the `win_ad_dacl` module, and others, will be
