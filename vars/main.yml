@@ -6,6 +6,7 @@ pri_laps_gpo_reg_path: HKLM\Software\Policies\Microsoft Services\AdmPwd
 pri_laps_install_urls:
   AMD64: https://download.microsoft.com/download/C/7/A/C7AAD914-A8A6-4904-88A1-29E657445D03/LAPS.x64.msi
   X86: https://download.microsoft.com/download/C/7/A/C7AAD914-A8A6-4904-88A1-29E657445D03/LAPS.x86.msi
+  ARM64: https://download.microsoft.com/download/C/7/A/C7AAD914-A8A6-4904-88A1-29E657445D03/LAPS.ARM64.msi
 
 # converts opt_laps_password_policy_complexity to the value expected by GPO
 pri_laps_password_policy_complexity:

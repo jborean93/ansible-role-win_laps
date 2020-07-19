@@ -14,3 +14,4 @@ opt_laps_gpo_name: ansible-laps
 opt_laps_password_policy_complexity: uppercase,lowercase,digits,symbols
 opt_laps_password_policy_length: 14
 opt_laps_password_policy_age: 30
+opt_laps_gpo_comment_path: C:\Windows\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx
