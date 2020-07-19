@@ -87,7 +87,7 @@ The following optional variables can be set to control the GPO config;
     * `uppercase,lowercase,digits`
     * `uppercase,lowercase,digits,symbols` *default*
 * `opt_laps_password_policy_length`: The length of the password to generate (default: `14`)
-* `opt_laps_gpo_comment_path`: The path for GPO Comment (default: `opt_laps_gpo_comment_path: D:\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx`
+* `opt_laps_gpo_comment_path`: The path for GPO Comment (default: `C:\SYSVOL\domain\Policies\{{ '{' }}{{ pri_laps_gpo.id }}{{ '}' }}\Machine\comment.cmtx`
 
 ### Output Variables
 
