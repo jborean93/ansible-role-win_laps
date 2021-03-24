@@ -50,7 +50,7 @@ options:
         - Descendents
         - None
         - SelfAndChildren
-        required; True
+        required: True
         type: str
       inherited_object_type:
         description:
